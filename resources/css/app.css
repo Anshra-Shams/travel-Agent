@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Hide elements until Alpine.js has initialized them */
+[x-cloak] {
+    display: none !important;
+}
+
+/* Sidebar scrollbar (matches the dark slate-900 sidebar theme) */
+.admin-sidebar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
+}
+
+.admin-sidebar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.admin-sidebar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.admin-sidebar::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.35);
+    border-radius: 9999px;
+}
+
+.admin-sidebar::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.55);
+}
+
+/* Quotation print styles */
+@media print {
+    body { background: white !important; }
+
+    aside, nav, header, footer,
+    .no-print, .print-hidden,
+    [x-show="sidebarOpen"] { display: none !important; }
+
+    .print-area {
+        position: static !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        max-width: none !important;
+        box-shadow: none !important;
+        border: none !important;
+    }
+
+    .print-page {
+        min-height: auto !important;
+        background: white !important;
+        padding: 0 !important;
+    }
+
+    main { padding: 0 !important; }
+}
