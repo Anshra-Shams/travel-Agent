@@ -1,3 +1,5 @@
+@props(['title' => null, 'hideFooter' => false, 'compact' => false])
+
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
@@ -10,6 +12,9 @@
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet" />
+
+        <!-- SweetAlert2 -->
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -41,14 +46,16 @@
             <div class="flex min-h-screen min-w-0 flex-1 flex-col lg:pl-64">
                 @include('layouts.partials.navbar')
 
-                <main class="flex-1 px-4 py-6 sm:px-6 lg:px-8">
+                <main class="flex-1 px-4 {{ $compact ? 'py-3' : 'py-6' }} sm:px-6 lg:px-8">
                     @include('layouts.partials.flash')
                     {{ $slot }}
                 </main>
 
-                <footer class="border-t border-gray-200 bg-white px-4 py-4 text-center text-xs text-gray-400 sm:px-6">
-                    &copy; {{ date('Y') }} {{ config('app.name', 'Prowave') }}. All rights reserved.
-                </footer>
+                @unless ($hideFooter)
+                    <footer class="border-t border-gray-200 bg-white px-4 py-4 text-center text-xs text-gray-400 sm:px-6">
+                        &copy; {{ date('Y') }} {{ config('app.name', 'Prowave') }}. All rights reserved.
+                    </footer>
+                @endunless
             </div>
         </div>
     </body>

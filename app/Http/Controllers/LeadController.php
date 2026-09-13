@@ -28,6 +28,16 @@ class LeadController extends Controller
         'Follow-up',
     ];
 
+    public const SOURCES = [
+        'Call',
+        'WhatsApp',
+        'Walk-in',
+        'Facebook',
+        'Instagram',
+        'Website',
+        'Other',
+    ];
+
     /**
      * Display a listing of the leads.
      */
@@ -45,7 +55,7 @@ class LeadController extends Controller
                 });
             })
             ->when($request->filled('service'), function ($query) use ($request) {
-                $query->where('service', $request->service);
+                $query->whereJsonContains('service', $request->service);
             })
             ->when($request->filled('status'), function ($query) use ($request) {
                 $query->where('status', $request->status);
@@ -57,12 +67,21 @@ class LeadController extends Controller
             ->paginate(10)
             ->withQueryString();
 
+        $stats = [
+            'total' => Lead::count(),
+            'new' => Lead::where('status', 'New')->count(),
+            'in_progress' => Lead::whereIn('status', ['Contacted', 'Interested', 'Quotation Sent', 'Follow-up'])->count(),
+            'converted' => Lead::where('status', 'Converted')->count(),
+        ];
+
         return view('leads.index', [
             'leads' => $leads,
             'services' => self::getServices(),
             'statuses' => self::STATUSES,
+            'sources' => self::SOURCES,
             'agents' => User::orderBy('name')->get(),
             'filters' => $request->only(['search', 'service', 'status', 'agent']),
+            'stats' => $stats,
         ]);
     }
 
@@ -84,13 +103,14 @@ class LeadController extends Controller
     public function store(Request $request)
     {
         $data = $this->validated($request);
+        $data['service'] = $this->normalizeServices($data['service'] ?? []);
 
         $lead = Lead::create($data);
 
         $this->logActivity($lead, 'system', "Lead created with status: {$lead->status}");
 
         return redirect()
-            ->route('leads.show', $lead)
+            ->route('leads.index')
             ->with('success', 'Lead created successfully.');
     }
 
@@ -133,6 +153,7 @@ class LeadController extends Controller
     public function update(Request $request, Lead $lead)
     {
         $data = $this->validated($request);
+        $data['service'] = $this->normalizeServices($data['service'] ?? []);
 
         $oldStatus = $lead->status;
 
@@ -145,7 +166,7 @@ class LeadController extends Controller
         }
 
         return redirect()
-            ->route('leads.show', $lead)
+            ->route('leads.index')
             ->with('success', 'Lead updated successfully.');
     }
 
@@ -262,7 +283,7 @@ class LeadController extends Controller
                 'phone' => $lead->phone,
                 'email' => $lead->email,
                 'whatsapp' => $lead->whatsapp,
-                'service' => $lead->service ? [$lead->service] : [],
+                'service' => $lead->services_list,
                 'destination' => $lead->destination,
                 'travel_date' => $lead->travel_date,
                 'travelers' => $lead->travelers,
@@ -300,16 +321,29 @@ class LeadController extends Controller
             'phone' => ['required', 'string', 'max:30'],
             'email' => ['nullable', 'email', 'max:255'],
             'whatsapp' => ['nullable', 'string', 'max:30'],
-            'service' => ['required', 'in:' . implode(',', self::getServices())],
-            'destination' => ['nullable', 'string', 'max:255'],
-            'travel_date' => ['nullable', 'date'],
-            'travelers' => ['nullable', 'integer', 'min:1', 'max:999'],
-            'source' => ['nullable', 'string', 'max:255'],
-            'agent_id' => ['nullable', 'exists:users,id'],
-            'status' => ['nullable', 'in:' . implode(',', self::STATUSES)],
-            'follow_up_date' => ['nullable', 'date'],
-            'notes' => ['nullable', 'string', 'max:5000'],
+            'service' => ['nullable', 'array'],
+                'service.*' => ['in:' . implode(',', self::getServices())],
+                'destination' => ['nullable', 'string', 'max:255'],
+                'travel_date' => ['nullable', 'date'],
+                'travelers' => ['nullable', 'integer', 'min:1', 'max:999'],
+                'source' => ['nullable', 'in:' . implode(',', self::SOURCES)],
+                'agent_id' => ['nullable', 'exists:users,id'],
+                'status' => ['required', 'in:' . implode(',', self::STATUSES)],
+                'follow_up_date' => ['nullable', 'date'],
+                'follow_up_time' => ['nullable', 'date_format:H:i'],
+                'notes' => ['nullable', 'string', 'max:5000'],
         ]);
+    }
+
+    /**
+     * Normalize the submitted services into a clean array.
+     */
+    protected function normalizeServices(array $services): array
+    {
+        return array_values(array_filter(
+            $services,
+            fn ($service) => is_string($service) && trim($service) !== ''
+        ));
     }
 
     /**

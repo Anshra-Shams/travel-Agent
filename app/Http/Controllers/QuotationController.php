@@ -2,285 +2,257 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Account;
+use App\Models\AccountTransaction;
 use App\Models\Customer;
 use App\Models\CustomerService;
 use App\Models\Quotation;
-use App\Models\QuotationItem;
 use App\Models\ServiceType;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class QuotationController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Quotation::with(['customer', 'serviceRequirement'])
+        $query = Quotation::with(['customer'])
             ->when($request->filled('search'), function ($q) use ($request) {
                 $s = $request->search;
-                $q->whereHas('customer', fn ($c) => $c
-                    ->where('name', 'like', "%{$s}%")
-                    ->orWhere('phone', 'like', "%{$s}%")
-                );
+                $q->where(function ($c) use ($s) {
+                    $c->where('quotation_number', 'like', "%{$s}%")
+                        ->orWhereHas('customer', fn ($cu) => $cu
+                            ->where('name', 'like', "%{$s}%")
+                            ->orWhere('phone', 'like', "%{$s}%")
+                        );
+                });
             })
-            ->when($request->filled('service_type'), fn ($q) => $q->where('service_type', $request->service_type))
+            ->when($request->filled('type'), fn ($q) => $q->where('type', $request->type))
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))
-            ->when($request->filled('date_from'), fn ($q) => $q->whereDate('quotation_date', '>=', $request->date_from))
-            ->when($request->filled('date_to'), fn ($q) => $q->whereDate('quotation_date', '<=', $request->date_to))
             ->orderByDesc('id');
 
         $quotations = $query->paginate(15)->withQueryString();
 
+        $type = $request->filled('type') ? $request->type : null;
+        $statuses = $type === 'booking'
+            ? Quotation::BOOKING_STATUSES
+            : Quotation::STATUSES;
+
         return view('quotations.index', [
             'quotations' => $quotations,
             'serviceTypes' => ServiceType::getActiveNames(),
-            'statuses' => Quotation::STATUSES,
-            'filters' => $request->only(['search', 'service_type', 'status', 'date_from', 'date_to']),
+            'statuses' => $statuses,
+            'paymentStatuses' => Quotation::PAYMENT_STATUSES,
+            'filters' => $request->only(['search', 'type', 'status']),
         ]);
     }
 
     public function create(Request $request)
     {
-        $requirementId = $request->query('requirement');
-        $requirement = null;
-
-        if ($requirementId) {
-            $requirement = CustomerService::with('customer')->find($requirementId);
-        }
-
-        if (!$requirement) {
-            $requirements = CustomerService::with('customer')
-                ->where('status', 'Ready for Quotation')
-                ->whereDoesntHave('quotations')
-                ->orderByDesc('id')
-                ->get();
-
-            return view('quotations.select-requirement', [
-                'requirements' => $requirements,
-            ]);
-        }
-
-        $existingItems = [];
-        if ($requirement->service_type === 'Umrah' || $requirement->service_type === 'Hajj') {
-            if ($requirement->ticket_requirement) {
-                $existingItems[] = ['description' => 'Flight Ticket', 'quantity' => $requirement->travelers ?? 1, 'unit_price' => 0];
-            }
-            if ($requirement->visa_requirement) {
-                $existingItems[] = ['description' => 'Visa', 'quantity' => $requirement->travelers ?? 1, 'unit_price' => 0];
-            }
-            if ($requirement->makkah_hotel) {
-                $existingItems[] = ['description' => 'Makkah Hotel - ' . $requirement->makkah_hotel, 'quantity' => 1, 'unit_price' => 0];
-            }
-            if ($requirement->madinah_hotel) {
-                $existingItems[] = ['description' => 'Madinah Hotel - ' . $requirement->madinah_hotel, 'quantity' => 1, 'unit_price' => 0];
-            }
-            if ($requirement->transport_requirement) {
-                $existingItems[] = ['description' => 'Transportation', 'quantity' => 1, 'unit_price' => 0];
-            }
-        } elseif ($requirement->service_type === 'Flight Ticket') {
-            $existingItems[] = ['description' => 'Flight Ticket', 'quantity' => $requirement->passenger_count ?? $requirement->travelers ?? 1, 'unit_price' => 0];
-        } elseif ($requirement->service_type === 'Visa') {
-            $existingItems[] = ['description' => 'Visa', 'quantity' => $requirement->applicants ?? $requirement->travelers ?? 1, 'unit_price' => 0];
-        } elseif ($requirement->service_type === 'Hotel') {
-            $existingItems[] = ['description' => 'Hotel Booking', 'quantity' => $requirement->rooms ?? 1, 'unit_price' => 0];
-        } elseif ($requirement->service_type === 'Transportation') {
-            $existingItems[] = ['description' => 'Transportation - ' . ($requirement->vehicle_type ?? 'Standard'), 'quantity' => 1, 'unit_price' => 0];
-        } else {
-            $existingItems[] = ['description' => $requirement->service_type, 'quantity' => $requirement->travelers ?? 1, 'unit_price' => 0];
-        }
-
-        if (empty($existingItems)) {
-            $existingItems[] = ['description' => '', 'quantity' => 1, 'unit_price' => 0];
-        }
-
-        $serviceTypes = ServiceType::getActiveNames();
-
         return view('quotations.create', [
-            'requirement' => $requirement,
-            'existingItems' => $existingItems,
-            'serviceTypes' => $serviceTypes,
+            'quotation' => null,
+            'customers' => Customer::orderBy('name')->get(['id', 'name', 'phone', 'travelers']),
+            'serviceTypes' => ServiceType::getActiveNames(),
+            'serviceAmounts' => ServiceType::whereNotNull('amount')
+                ->pluck('amount', 'name')
+                ->map(fn ($v) => (float) $v)
+                ->toArray(),
+            'accounts' => Account::active()->orderBy('name')->get(),
+            'paymentStatuses' => Quotation::PAYMENT_STATUSES,
+            'bookingStatuses' => Quotation::BOOKING_STATUSES,
+            'quotationStatuses' => Quotation::STATUSES,
         ]);
     }
 
     public function store(Request $request)
     {
-        $data = $request->validate([
-            'customer_service_id' => ['required', 'exists:customer_services,id'],
-            'service_type' => ['required', 'string'],
-            'destination' => ['nullable', 'string', 'max:255'],
-            'quotation_date' => ['required', 'date'],
-            'valid_until' => ['required', 'date', 'after_or_equal:quotation_date'],
-            'items' => ['required', 'array', 'min:1'],
-            'items.*.description' => ['required', 'string', 'max:255'],
-            'items.*.quantity' => ['required', 'integer', 'min:1'],
-            'items.*.unit_price' => ['required', 'numeric', 'min:0'],
-            'discount' => ['nullable', 'numeric', 'min:0'],
-            'tax' => ['nullable', 'numeric', 'min:0'],
-            'payment_terms' => ['nullable', 'string', 'max:2000'],
-            'deposit_required' => ['nullable', 'numeric', 'min:0'],
-            'payment_due_date' => ['nullable', 'date'],
-            'notes' => ['nullable', 'string', 'max:2000'],
-            'terms_conditions' => ['nullable', 'string', 'max:5000'],
-        ]);
+        $data = $this->validated($request);
+        $type = $data['type'];
 
-        $requirement = CustomerService::findOrFail($data['customer_service_id']);
-
-        $subtotal = 0;
-        foreach ($data['items'] as $item) {
-            $subtotal += $item['quantity'] * $item['unit_price'];
-        }
-
-        $discount = $data['discount'] ?? 0;
-        $tax = $data['tax'] ?? 0;
-        $grandTotal = $subtotal - $discount + $tax;
-        $deposit = $data['deposit_required'] ?? null;
-        $remaining = $deposit !== null ? max(0, $grandTotal - $deposit) : null;
+        $requirement = $data['customer_service_id'] ?? null
+            ? CustomerService::find($data['customer_service_id'])
+            : null;
 
         $quotation = Quotation::create([
-            'customer_id' => $requirement->customer_id,
+            'type' => $type,
+            'customer_id' => $data['customer_id'],
+            'customer_service_id' => $data['customer_service_id'] ?? null,
             'agent_id' => auth()->id(),
-            'customer_service_id' => $requirement->id,
-            'service_type' => $data['service_type'],
-            'destination' => $data['destination'] ?? $requirement->destination,
-            'quotation_date' => $data['quotation_date'],
-            'valid_until' => $data['valid_until'],
-            'status' => 'Draft',
-            'subtotal' => $subtotal,
-            'discount' => $discount,
-            'tax' => $tax,
-            'grand_total' => $grandTotal,
-            'payment_terms' => $data['payment_terms'] ?? null,
-            'deposit_required' => $deposit,
-            'remaining_amount' => $remaining,
-            'payment_due_date' => $data['payment_due_date'] ?? null,
+            'account_id' => $data['account_id'] ?? null,
+            'service_type' => $data['services'][0] ?? 'General',
+            'services' => $data['services'],
+            'destination' => $data['destination'] ?? $requirement?->destination ?? null,
+            'quotation_date' => now()->toDateString(),
+            'valid_until' => $type === 'quotation' ? $data['valid_until'] : null,
+            'travel_date' => $type === 'booking'
+                ? ($data['travel_date'] ?? $requirement?->travel_date ?? null)
+                : null,
+            'status' => $data['status'],
+            'payment_status' => $type === 'booking' ? ($data['payment_status'] ?? 'Pending') : null,
+            'reference' => $type === 'quotation' ? ($data['reference'] ?? null) : null,
+            'subtotal' => $data['subtotal'],
+            'discount' => $data['discount'] ?? 0,
+            'tax' => 0,
+            'grand_total' => $data['grand_total'],
             'notes' => $data['notes'] ?? null,
-            'terms_conditions' => $data['terms_conditions'] ?? null,
         ]);
-
-        foreach ($data['items'] as $index => $item) {
-            $quotation->items()->create([
-                'description' => $item['description'],
-                'quantity' => $item['quantity'],
-                'unit_price' => $item['unit_price'],
-                'total' => $item['quantity'] * $item['unit_price'],
-                'sort_order' => $index,
-            ]);
-        }
 
         $quotation->activities()->create([
             'agent_id' => auth()->id(),
             'type' => 'note',
-            'description' => 'Quotation created',
+            'description' => $type === 'booking'
+                ? "Booking {$quotation->quotation_number} created"
+                : "Quotation {$quotation->quotation_number} created",
         ]);
 
-        $requirement->update(['status' => 'Ready for Quotation']);
-
-        $requirement->customer->activities()->create([
+        $quotation->customer->activities()->create([
             'agent_id' => auth()->id(),
             'type' => 'note',
-            'description' => "Quotation {$quotation->quotation_number} created for {$quotation->service_type}",
+            'description' => ($type === 'booking' ? 'Booking ' : 'Quotation ') . "{$quotation->quotation_number} created",
         ]);
+
+        if ($type === 'booking') {
+            $this->recordPayment($quotation, $data);
+        }
 
         return redirect()
             ->route('quotations.show', $quotation)
-            ->with('success', 'Quotation created successfully.');
+            ->with('success', ($type === 'booking' ? 'Booking' : 'Quotation') . ' created successfully.');
     }
 
     public function show(Quotation $quotation)
     {
-        $quotation->load(['customer', 'agent', 'items', 'activities.agent', 'serviceRequirement']);
+        $quotation->load(['customer', 'agent', 'activities.agent']);
 
         return view('quotations.show', [
             'quotation' => $quotation,
         ]);
     }
 
+    public function requirement(Request $request)
+    {
+        $request->validate([
+            'customer_id' => ['required', 'exists:customers,id'],
+            'service' => ['required', Rule::in(ServiceType::getActiveNames())],
+        ]);
+
+        $requirement = CustomerService::where('customer_id', $request->customer_id)
+            ->where('service_type', $request->service)
+            ->latest()
+            ->first();
+
+        $customer = Customer::with('services')->findOrFail($request->customer_id);
+
+        $allServices = $customer->services
+            ->sortByDesc('updated_at')
+            ->map(function (CustomerService $cs) use ($request) {
+                return [
+                    'id' => $cs->id,
+                    'service_type' => $cs->service_type,
+                    'status' => $cs->status,
+                    'destination' => $cs->destination,
+                    'travel_date' => $cs->travel_date?->format('Y-m-d'),
+                    'travelers' => $cs->travelers,
+                    'requirements' => $cs->requirements,
+                    'general' => $this->generalInfo($cs),
+                    'specific' => $cs->specific_requirements,
+                    'total' => (float) (ServiceType::where('name', $cs->service_type)->value('amount') ?? 0),
+                    'selected' => $cs->service_type === $request->service,
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'found' => $requirement !== null,
+            'amount' => $requirement
+                ? (float) (ServiceType::where('name', $requirement->service_type)->value('amount') ?? 0)
+                : 0,
+            'requirement' => $requirement ? [
+                'id' => $requirement->id,
+                'service_type' => $requirement->service_type,
+                'status' => $requirement->status,
+                'destination' => $requirement->destination,
+                'travel_date' => $requirement->travel_date?->format('Y-m-d'),
+                'travelers' => $requirement->travelers,
+                'requirements' => $requirement->requirements,
+                'general' => $this->generalInfo($requirement),
+                'specific' => $requirement->specific_requirements,
+            ] : null,
+            'all_services' => $allServices,
+            'customer_travelers' => (int) ($customer->travelers ?: 0),
+        ]);
+    }
+
     public function edit(Quotation $quotation)
     {
-        $quotation->load(['customer', 'items', 'serviceRequirement']);
-        $serviceTypes = ServiceType::getActiveNames();
+        $quotation->load('customer');
 
-        return view('quotations.edit', [
+        return view('quotations.create', [
             'quotation' => $quotation,
-            'serviceTypes' => $serviceTypes,
+            'customers' => Customer::orderBy('name')->get(['id', 'name', 'phone', 'travelers']),
+            'serviceTypes' => ServiceType::getActiveNames(),
+            'serviceAmounts' => ServiceType::whereNotNull('amount')
+                ->pluck('amount', 'name')
+                ->map(fn ($v) => (float) $v)
+                ->toArray(),
+            'accounts' => Account::active()->orderBy('name')->get(),
+            'paymentStatuses' => Quotation::PAYMENT_STATUSES,
+            'bookingStatuses' => Quotation::BOOKING_STATUSES,
+            'quotationStatuses' => Quotation::STATUSES,
         ]);
     }
 
     public function update(Request $request, Quotation $quotation)
     {
-        $data = $request->validate([
-            'service_type' => ['required', 'string'],
-            'destination' => ['nullable', 'string', 'max:255'],
-            'quotation_date' => ['required', 'date'],
-            'valid_until' => ['required', 'date', 'after_or_equal:quotation_date'],
-            'items' => ['required', 'array', 'min:1'],
-            'items.*.description' => ['required', 'string', 'max:255'],
-            'items.*.quantity' => ['required', 'integer', 'min:1'],
-            'items.*.unit_price' => ['required', 'numeric', 'min:0'],
-            'discount' => ['nullable', 'numeric', 'min:0'],
-            'tax' => ['nullable', 'numeric', 'min:0'],
-            'payment_terms' => ['nullable', 'string', 'max:2000'],
-            'deposit_required' => ['nullable', 'numeric', 'min:0'],
-            'payment_due_date' => ['nullable', 'date'],
-            'notes' => ['nullable', 'string', 'max:2000'],
-            'terms_conditions' => ['nullable', 'string', 'max:5000'],
-        ]);
+        $data = $this->validated($request);
+        $type = $data['type'];
 
-        $subtotal = 0;
-        foreach ($data['items'] as $item) {
-            $subtotal += $item['quantity'] * $item['unit_price'];
-        }
-
-        $discount = $data['discount'] ?? 0;
-        $tax = $data['tax'] ?? 0;
-        $grandTotal = $subtotal - $discount + $tax;
-        $deposit = $data['deposit_required'] ?? null;
-        $remaining = $deposit !== null ? max(0, $grandTotal - $deposit) : null;
+        $requirement = $data['customer_service_id'] ?? null
+            ? CustomerService::find($data['customer_service_id'])
+            : null;
 
         $quotation->update([
-            'service_type' => $data['service_type'],
-            'destination' => $data['destination'] ?? $quotation->destination,
-            'quotation_date' => $data['quotation_date'],
-            'valid_until' => $data['valid_until'],
-            'subtotal' => $subtotal,
-            'discount' => $discount,
-            'tax' => $tax,
-            'grand_total' => $grandTotal,
-            'payment_terms' => $data['payment_terms'] ?? null,
-            'deposit_required' => $deposit,
-            'remaining_amount' => $remaining,
-            'payment_due_date' => $data['payment_due_date'] ?? null,
+            'type' => $type,
+            'customer_id' => $data['customer_id'],
+            'customer_service_id' => $data['customer_service_id'] ?? null,
+            'service_type' => $data['services'][0] ?? $quotation->service_type ?? 'General',
+            'services' => $data['services'],
+            'destination' => $data['destination'] ?? $requirement?->destination ?? null,
+            'valid_until' => $type === 'quotation' ? $data['valid_until'] : null,
+            'travel_date' => $type === 'booking'
+                ? ($data['travel_date'] ?? $requirement?->travel_date ?? null)
+                : null,
+            'status' => $data['status'],
+            'payment_status' => $type === 'booking' ? ($data['payment_status'] ?? 'Pending') : null,
+            'reference' => $type === 'quotation' ? ($data['reference'] ?? null) : null,
+            'subtotal' => $data['subtotal'],
+            'discount' => $data['discount'] ?? 0,
+            'grand_total' => $data['grand_total'],
             'notes' => $data['notes'] ?? null,
-            'terms_conditions' => $data['terms_conditions'] ?? null,
         ]);
 
-        $quotation->items()->delete();
-        foreach ($data['items'] as $index => $item) {
-            $quotation->items()->create([
-                'description' => $item['description'],
-                'quantity' => $item['quantity'],
-                'unit_price' => $item['unit_price'],
-                'total' => $item['quantity'] * $item['unit_price'],
-                'sort_order' => $index,
-            ]);
+        if ($type === 'booking') {
+            $this->recordPayment($quotation, $data);
         }
 
         $quotation->activities()->create([
             'agent_id' => auth()->id(),
             'type' => 'note',
-            'description' => 'Quotation updated',
+            'description' => ($quotation->is_booking ? 'Booking' : 'Quotation') . ' details updated',
         ]);
 
         return redirect()
             ->route('quotations.show', $quotation)
-            ->with('success', 'Quotation updated successfully.');
+            ->with('success', 'Record updated successfully.');
     }
 
     public function destroy(Quotation $quotation)
     {
+        $label = $quotation->is_booking ? 'Booking' : 'Quotation';
+
         $quotation->customer->activities()->create([
             'agent_id' => auth()->id(),
             'type' => 'note',
-            'description' => "Quotation {$quotation->quotation_number} deleted",
+            'description' => "{$label} {$quotation->quotation_number} deleted",
         ]);
 
         $quotation->items()->delete();
@@ -289,13 +261,38 @@ class QuotationController extends Controller
 
         return redirect()
             ->route('quotations.index')
-            ->with('success', 'Quotation deleted successfully.');
+            ->with('success', "{$label} deleted successfully.");
+    }
+
+    public function convertToBooking(Quotation $quotation)
+    {
+        if ($quotation->type === 'booking') {
+            return back()->with('info', 'This record is already a booking.');
+        }
+
+        $quotation->update([
+            'type' => 'booking',
+            'status' => 'Processing',
+            'payment_status' => $quotation->payment_status ?: 'Pending',
+            'valid_until' => null,
+            'reference' => null,
+        ]);
+
+        $quotation->activities()->create([
+            'agent_id' => auth()->id(),
+            'type' => 'note',
+            'description' => "Quotation {$quotation->quotation_number} converted to booking {$quotation->quotation_number}",
+        ]);
+
+        return back()->with('success', 'Quotation converted to booking successfully.');
     }
 
     public function updateStatus(Request $request, Quotation $quotation)
     {
+        $allowed = $quotation->is_booking ? Quotation::BOOKING_STATUSES : Quotation::STATUSES;
+
         $data = $request->validate([
-            'status' => ['required', 'in:' . implode(',', Quotation::STATUSES)],
+            'status' => ['required', Rule::in($allowed)],
         ]);
 
         $oldStatus = $quotation->status;
@@ -309,12 +306,110 @@ class QuotationController extends Controller
             'description' => "Status changed from {$oldStatus} to {$newStatus}",
         ]);
 
-        $quotation->customer->activities()->create([
-            'agent_id' => auth()->id(),
-            'type' => 'note',
-            'description' => "Quotation {$quotation->quotation_number} status: {$newStatus}",
+        return back()->with('success', "Status changed to {$newStatus}.");
+    }
+
+    /**
+     * Record a booking payment against the selected account in the ledger.
+     * If an account was changed or the amount changed, keep one entry per save.
+     */
+    protected function recordPayment(Quotation $quotation, array $data): void
+    {
+        $accountId = $data['account_id'] ?? null;
+        $paidTotal = (float) ($data['payment_amount'] ?? 0);
+
+        if ($paidTotal > 0) {
+            if ($accountId) {
+                $account = Account::find($accountId);
+                if ($account) {
+                    AccountTransaction::create([
+                        'account_id' => $accountId,
+                        'date' => now()->toDateString(),
+                        'reference' => $quotation->quotation_number,
+                        'description' => "Payment received from {$quotation->customer->name} - {$quotation->quotation_number}",
+                        'credit' => $paidTotal,
+                        'debit' => 0,
+                    ]);
+
+                    $balance = $account->opening_balance + $account->transactions()->sum('credit') - $account->transactions()->sum('debit');
+                    $account->update(['current_balance' => $balance]);
+                }
+            }
+
+            $paymentStatus = $paidTotal >= (float) $quotation->grand_total ? 'Paid' : 'Partial';
+            $quotation->update([
+                'payment_status' => $paymentStatus,
+                'deposit_required' => $paidTotal,
+                'remaining_amount' => max(0, (float) $quotation->grand_total - $paidTotal),
+            ]);
+        }
+    }
+
+    /**
+     * Validate shared + type-specific fields and return prepared data.
+     */
+    protected function validated(Request $request): array
+    {
+        $serviceTypeNames = implode(',', ServiceType::getActiveNames());
+
+        $data = $request->validate([
+            'type' => ['required', Rule::in(['booking', 'quotation'])],
+            'customer_id' => ['required', 'exists:customers,id'],
+            'customer_service_id' => ['nullable', 'exists:customer_services,id'],
+            'service' => ['required', 'string', 'in:' . $serviceTypeNames],
+            'subtotal' => ['required', 'numeric', 'min:0'],
+            'discount' => ['nullable', 'numeric', 'min:0'],
+            'grand_total' => ['required', 'numeric', 'min:0'],
+            'destination' => ['nullable', 'string', 'max:255'],
+            'notes' => ['nullable', 'string', 'max:3000'],
+            // Booking specific
+            'travel_date' => ['nullable', 'date'],
+            'payment_status' => ['nullable', Rule::in(Quotation::PAYMENT_STATUSES)],
+            'account_id' => ['nullable', 'exists:accounts,id'],
+            'payment_amount' => ['nullable', 'numeric', 'min:0'],
+            'advance' => ['nullable', 'numeric', 'min:0'],
+            // Quotation specific
+            'valid_until' => ['nullable', 'date'],
+            'reference' => ['nullable', 'string', 'max:255'],
         ]);
 
-        return back()->with('success', "Quotation marked as {$newStatus}.");
+        $data['services'] = [$data['service']];
+        unset($data['service']);
+
+        $type = $data['type'];
+
+        if ($type === 'booking') {
+            $status = $request->validate([
+                'status' => ['required', Rule::in(Quotation::BOOKING_STATUSES)],
+            ])['status'];
+            $data['status'] = $status;
+        } else {
+            $status = $request->validate([
+                'status' => ['required', Rule::in(Quotation::STATUSES)],
+            ])['status'];
+            $data['status'] = $status;
+
+            if (empty($data['valid_until'])) {
+                $request->validate([
+                    'valid_until' => ['required', 'date', 'after_or_equal:today'],
+                ]);
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * Build the "General Information" block for a customer service.
+     */
+    protected function generalInfo(CustomerService $service): array
+    {
+        return [
+            ['label' => 'Customer', 'value' => $service->customer?->name],
+            ['label' => 'Service Type', 'value' => $service->service_type],
+            ['label' => 'Destination', 'value' => $service->destination],
+            ['label' => 'Travel Date', 'value' => $service->travel_date?->format('d M Y')],
+            ['label' => 'Number of Travelers', 'value' => $service->travelers],
+        ];
     }
 }

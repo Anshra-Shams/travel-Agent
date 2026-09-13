@@ -13,12 +13,14 @@ class ServiceType extends Model
         'name',
         'icon',
         'description',
+        'amount',
         'status',
         'sort_order',
     ];
 
     protected $casts = [
         'sort_order' => 'integer',
+        'amount' => 'float',
     ];
 
     public const COLOR_PALETTE = [

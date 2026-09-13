@@ -18,10 +18,13 @@ class ServiceTypeController extends Controller
             'name' => ['required', 'string', 'max:100', 'unique:service_types,name'],
             'icon' => ['nullable', 'string', 'max:10'],
             'description' => ['nullable', 'string', 'max:255'],
+            'amount' => ['nullable', 'numeric', 'min:0', 'max:9999999999'],
             'status' => ['required', 'in:active,inactive'],
         ]);
 
-        $data['icon'] = $data['icon'] ?: '📋';
+        $data['amount'] = array_key_exists('amount', $data) && $data['amount'] !== null && $data['amount'] !== '' ? $data['amount'] : null;
+
+        $data['icon'] = ($data['icon'] ?? null) ?: '📋';
         $data['sort_order'] = ServiceType::max('sort_order') + 1;
 
         $serviceType = ServiceType::create($data);
@@ -44,10 +47,13 @@ class ServiceTypeController extends Controller
             'name' => ['required', 'string', 'max:100', 'unique:service_types,name,' . $serviceType->id],
             'icon' => ['nullable', 'string', 'max:10'],
             'description' => ['nullable', 'string', 'max:255'],
+            'amount' => ['nullable', 'numeric', 'min:0', 'max:9999999999'],
             'status' => ['required', 'in:active,inactive'],
         ]);
 
-        $data['icon'] = $data['icon'] ?: '📋';
+        $data['amount'] = array_key_exists('amount', $data) && $data['amount'] !== null && $data['amount'] !== '' ? $data['amount'] : null;
+
+        $data['icon'] = ($data['icon'] ?? null) ?: '📋';
 
         $serviceType->update($data);
 

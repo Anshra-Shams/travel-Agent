@@ -45,6 +45,11 @@
                     </select>
                     <x-input-error :messages="$errors->get('status')" class="mt-1" />
                 </div>
+                <div>
+                    <x-input-label for="amount" value="Service Amount" />
+                    <x-text-input id="amount" class="mt-1.5 block w-full" type="number" name="amount" :value="old('amount')" step="0.01" min="0" placeholder="e.g. 150000" />
+                    <x-input-error :messages="$errors->get('amount')" class="mt-1" />
+                </div>
             </div>
         </div>
 

@@ -9,6 +9,8 @@
         'Converted' => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
         'Not Interested' => 'bg-rose-50 text-rose-700 ring-rose-200',
         'Follow-up' => 'bg-orange-50 text-orange-700 ring-orange-200',
+        'In Progress' => 'bg-indigo-50 text-indigo-700 ring-indigo-200',
+        'Lost' => 'bg-rose-50 text-rose-700 ring-rose-200',
     ];
     $color = $colors[$status] ?? 'bg-gray-50 text-gray-700 ring-gray-200';
 @endphp

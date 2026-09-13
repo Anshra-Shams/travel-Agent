@@ -38,5 +38,9 @@ class DatabaseSeeder extends Seeder
                 ]
             );
         }
+
+        $this->call([
+            ServiceTypeSeeder::class,
+        ]);
     }
 }

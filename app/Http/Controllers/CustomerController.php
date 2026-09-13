@@ -34,6 +34,9 @@ class CustomerController extends Controller
             ->when($request->filled('status'), function ($query) use ($request) {
                 $query->where('status', $request->status);
             })
+            ->when($request->filled('created_from'), function ($query) use ($request) {
+                $query->whereDate('created_at', '>=', $request->created_from);
+            })
             ->when($request->filled('service'), function ($query) use ($request) {
                 $query->whereJsonContains('service', $request->service);
             })
@@ -41,10 +44,18 @@ class CustomerController extends Controller
             ->paginate(10)
             ->withQueryString();
 
+        $stats = [
+            'total' => Customer::count(),
+            'active' => Customer::where('status', 'Active')->count(),
+            'new' => Customer::where('created_at', '>=', now()->startOfMonth())->count(),
+            'bookings' => 0,
+        ];
+
         return view('customers.index', [
             'customers' => $customers,
             'services' => ServiceType::getActiveNames(),
-            'filters' => $request->only(['search', 'customer_source', 'status', 'service']),
+            'filters' => $request->only(['search', 'customer_source', 'status', 'service', 'created_from']),
+            'stats' => $stats,
         ]);
     }
 
@@ -77,8 +88,34 @@ class CustomerController extends Controller
         ]);
 
         return redirect()
-            ->route('customers.show', $customer)
+            ->route('customers.index')
             ->with('success', 'Customer created successfully.');
+    }
+
+    /**
+     * JSON endpoint for quickly creating a customer from another page.
+     */
+    public function quickStore(Request $request)
+    {
+        $data = $this->validated($request);
+        $data['service'] = $this->normalizeServices($data['service'] ?? []);
+        $data['customer_source'] = 'direct';
+        $data['status'] = $request->input('status', 'Active');
+
+        $customer = Customer::create($data);
+
+        $customer->activities()->create([
+            'agent_id' => auth()->id(),
+            'type' => 'system',
+            'description' => 'Customer created directly',
+        ]);
+
+        return response()->json([
+            'id' => $customer->id,
+            'name' => $customer->name,
+            'phone' => $customer->phone,
+            'services' => $customer->services_list,
+        ]);
     }
 
     /**
@@ -147,7 +184,7 @@ class CustomerController extends Controller
         }
 
         return redirect()
-            ->route('customers.show', $customer)
+            ->route('customers.index')
             ->with('success', 'Customer updated successfully.');
     }
 
@@ -217,10 +254,11 @@ class CustomerController extends Controller
             'cnic' => ['nullable', 'string', 'max:30'],
             'passport_number' => ['nullable', 'string', 'max:50'],
             'passport_expiry' => ['nullable', 'date'],
-            'date_of_birth' => ['nullable', 'date', 'before:today'],
             'gender' => ['nullable', 'in:Male,Female,Other'],
             'address' => ['nullable', 'string', 'max:1000'],
+            'city' => ['nullable', 'string', 'max:255'],
             'country' => ['nullable', 'string', 'max:255'],
+            'created_from' => ['nullable', 'date'],
             'service' => ['nullable', 'array'],
             'service.*' => ['in:' . implode(',', ServiceType::getActiveNames())],
             'destination' => ['nullable', 'string', 'max:255'],

@@ -9,6 +9,11 @@ class Quotation extends Model
 {
     use HasFactory;
 
+    public const TYPES = [
+        'booking' => 'Booking',
+        'quotation' => 'Quotation',
+    ];
+
     public const STATUSES = [
         'Draft',
         'Sent',
@@ -18,16 +23,36 @@ class Quotation extends Model
         'Cancelled',
     ];
 
+    public const BOOKING_STATUSES = [
+        'Pending',
+        'Processing',
+        'Confirmed',
+        'Completed',
+        'Cancelled',
+    ];
+
+    public const PAYMENT_STATUSES = [
+        'Pending',
+        'Partial',
+        'Paid',
+    ];
+
     protected $fillable = [
+        'type',
         'quotation_number',
         'customer_id',
         'agent_id',
+        'account_id',
         'customer_service_id',
         'service_type',
+        'services',
         'destination',
         'quotation_date',
         'valid_until',
+        'travel_date',
         'status',
+        'payment_status',
+        'reference',
         'subtotal',
         'discount',
         'tax',
@@ -43,7 +68,9 @@ class Quotation extends Model
     protected $casts = [
         'quotation_date' => 'date',
         'valid_until' => 'date',
+        'travel_date' => 'date',
         'payment_due_date' => 'date',
+        'services' => 'array',
         'subtotal' => 'decimal:2',
         'discount' => 'decimal:2',
         'tax' => 'decimal:2',
@@ -56,7 +83,7 @@ class Quotation extends Model
     {
         static::creating(function (Quotation $quotation) {
             if (!$quotation->quotation_number) {
-                $quotation->quotation_number = self::generateNumber();
+                $quotation->quotation_number = self::generateNumber($quotation->type ?? 'quotation');
             }
             if (!$quotation->agent_id) {
                 $quotation->agent_id = auth()->id();
@@ -64,15 +91,18 @@ class Quotation extends Model
         });
     }
 
-    public static function generateNumber(): string
+    public static function generateNumber(string $type = 'quotation'): string
     {
-        $last = self::orderByDesc('id')->value('quotation_number');
-        if ($last && preg_match('/QT-(\d+)/', $last, $m)) {
+        $prefix = $type === 'booking' ? 'BK' : 'QT';
+        $last = self::where('quotation_number', 'like', $prefix . '-%')
+            ->orderByDesc('quotation_number')
+            ->value('quotation_number');
+        if ($last && preg_match('/' . $prefix . '-(\d+)/', $last, $m)) {
             $next = (int) $m[1] + 1;
         } else {
             $next = 1;
         }
-        return 'QT-' . str_pad($next, 4, '0', STR_PAD_LEFT);
+        return $prefix . '-' . str_pad($next, 4, '0', STR_PAD_LEFT);
     }
 
     public function customer()
@@ -88,6 +118,11 @@ class Quotation extends Model
     public function serviceRequirement()
     {
         return $this->belongsTo(CustomerService::class, 'customer_service_id');
+    }
+
+    public function account()
+    {
+        return $this->belongsTo(Account::class);
     }
 
     public function items()
@@ -110,6 +145,44 @@ class Quotation extends Model
         return $this;
     }
 
+    public function getServicesListAttribute(): array
+    {
+        $services = $this->services;
+
+        if (is_string($services)) {
+            $services = json_decode($services, true);
+        }
+
+        if (!is_array($services) || empty($services)) {
+            return array_values(array_filter([
+                $this->service_type,
+            ], fn ($s) => is_string($s) && trim($s) !== ''));
+        }
+
+        return array_values(array_filter(
+            $services,
+            fn ($s) => is_string($s) && trim($s) !== ''
+        ));
+    }
+
+    public function getTypeLabelAttribute(): string
+    {
+        return self::TYPES[$this->type] ?? ucfirst($this->type);
+    }
+
+    public function getReferenceLabelAttribute(): string
+    {
+        if ($this->type === 'booking') {
+            return $this->payment_status ?: '—';
+        }
+        return $this->reference ?: '—';
+    }
+
+    public function getIsBookingAttribute(): bool
+    {
+        return $this->type === 'booking';
+    }
+
     public function getStatusColorAttribute(): string
     {
         return match ($this->status) {
@@ -119,7 +192,21 @@ class Quotation extends Model
             'Rejected' => 'bg-rose-50 text-rose-700 ring-rose-200',
             'Expired' => 'bg-amber-50 text-amber-700 ring-amber-200',
             'Cancelled' => 'bg-slate-100 text-slate-600 ring-slate-200',
+            'Pending' => 'bg-amber-50 text-amber-700 ring-amber-200',
+            'Processing' => 'bg-sky-50 text-sky-700 ring-sky-200',
+            'Confirmed' => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+            'Completed' => 'bg-teal-50 text-teal-700 ring-teal-200',
             default => 'bg-gray-50 text-gray-700 ring-gray-200',
+        };
+    }
+
+    public function getPaymentStatusColorAttribute(): string
+    {
+        return match ($this->payment_status) {
+            'Pending' => 'bg-amber-50 text-amber-700 ring-amber-200',
+            'Partial' => 'bg-sky-50 text-sky-700 ring-sky-200',
+            'Paid' => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+            default => 'bg-gray-50 text-gray-500 ring-gray-200',
         };
     }
 }

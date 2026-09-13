@@ -22,6 +22,7 @@ class Lead extends Model
         'agent_id',
         'status',
         'follow_up_date',
+        'follow_up_time',
         'notes',
     ];
 
@@ -29,7 +30,22 @@ class Lead extends Model
         'travel_date' => 'date',
         'follow_up_date' => 'date',
         'travelers' => 'integer',
+        'service' => 'array',
     ];
+
+    public function getServicesListAttribute()
+    {
+        $services = $this->service;
+
+        if (is_string($services)) {
+            $services = json_decode($services, true);
+        }
+
+        return array_values(array_filter(
+            (array) $services,
+            fn ($service) => is_string($service) && trim($service) !== ''
+        ));
+    }
 
     public function assignedAgent()
     {

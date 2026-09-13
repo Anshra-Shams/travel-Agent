@@ -74,7 +74,16 @@
                                 <a href="{{ route('leads.show', $lead) }}" class="text-sm font-medium text-gray-900 hover:text-sky-600">{{ $lead->full_name }}</a>
                                 <p class="text-xs text-gray-400">{{ $lead->phone }}</p>
                             </td>
-                            <td class="px-5 py-3 text-sm text-gray-600">{{ $lead->service }}</td>
+                            <td class="px-5 py-3">
+                                <div class="flex flex-wrap gap-1">
+                                    @foreach (array_slice($lead->services_list, 0, 2) as $svc)
+                                        <span class="inline-flex items-center rounded-full bg-sky-50 px-2 py-0.5 text-[11px] font-medium text-sky-700 ring-1 ring-inset ring-sky-200">{{ $svc }}</span>
+                                    @endforeach
+                                    @if (count($lead->services_list) > 2)
+                                        <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-500">+{{ count($lead->services_list) - 2 }}</span>
+                                    @endif
+                                </div>
+                            </td>
                             <td class="px-5 py-3 text-right"><x-status-badge :status="$lead->status" /></td>
                         </tr>
                     @empty
@@ -124,7 +133,7 @@
                 <a href="{{ route('leads.show', $lead) }}" class="flex items-center justify-between gap-3 border-b border-gray-50 px-5 py-3.5 transition last:border-b-0 hover:bg-gray-50">
                     <div class="min-w-0">
                         <p class="truncate text-sm font-medium text-gray-900">{{ $lead->full_name }}</p>
-                        <p class="truncate text-xs text-gray-400">{{ $lead->service }}{{ $lead->assignedAgent?->name ? ' · ' . $lead->assignedAgent->name : '' }}</p>
+                        <p class="truncate text-xs text-gray-400">{{ implode(', ', $lead->services_list) ?: '—' }}{{ $lead->assignedAgent?->name ? ' · ' . $lead->assignedAgent->name : '' }}</p>
                     </div>
                     <span class="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-200">
                         <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">

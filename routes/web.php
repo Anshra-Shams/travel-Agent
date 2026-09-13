@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AccountController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LeadController;
@@ -35,15 +36,26 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('/service-types/{serviceType}', [ServiceTypeController::class, 'update'])->name('service-types.update');
     Route::delete('/service-types/{serviceType}', [ServiceTypeController::class, 'destroy'])->name('service-types.destroy');
 
-    // Quotations module
+    // Chart of Accounts module
+    Route::get('/accounts', [AccountController::class, 'index'])->name('accounts.index');
+    Route::post('/accounts/categories', [AccountController::class, 'storeCategory'])->name('accounts.categories.store');
+    Route::post('/accounts', [AccountController::class, 'store'])->name('accounts.store');
+    Route::put('/accounts/{account}', [AccountController::class, 'update'])->name('accounts.update');
+    Route::delete('/accounts/{account}', [AccountController::class, 'destroy'])->name('accounts.destroy');
+    Route::patch('/accounts/{account}/deactivate', [AccountController::class, 'deactivate'])->name('accounts.deactivate');
+    Route::get('/accounts/{account}/ledger', [AccountController::class, 'ledger'])->name('accounts.ledger');
+
+    // Quotations & Bookings module
     Route::get('/quotations', [QuotationController::class, 'index'])->name('quotations.index');
     Route::get('/quotations/create', [QuotationController::class, 'create'])->name('quotations.create');
+    Route::get('/quotations/requirement', [QuotationController::class, 'requirement'])->name('quotations.requirement');
     Route::post('/quotations', [QuotationController::class, 'store'])->name('quotations.store');
     Route::get('/quotations/{quotation}', [QuotationController::class, 'show'])->name('quotations.show');
     Route::get('/quotations/{quotation}/edit', [QuotationController::class, 'edit'])->name('quotations.edit');
     Route::put('/quotations/{quotation}', [QuotationController::class, 'update'])->name('quotations.update');
     Route::delete('/quotations/{quotation}', [QuotationController::class, 'destroy'])->name('quotations.destroy');
     Route::patch('/quotations/{quotation}/status', [QuotationController::class, 'updateStatus'])->name('quotations.status');
+    Route::patch('/quotations/{quotation}/convert', [QuotationController::class, 'convertToBooking'])->name('quotations.convert');
 
     // Services module
     Route::get('/services', [ServicesController::class, 'index'])->name('services.index');
@@ -73,6 +85,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/customers', [CustomerController::class, 'index'])->name('customers.index');
     Route::get('/customers/create', [CustomerController::class, 'create'])->name('customers.create');
     Route::post('/customers', [CustomerController::class, 'store'])->name('customers.store');
+    Route::post('/customers/quick-store', [CustomerController::class, 'quickStore'])->name('customers.quick-store');
     Route::get('/customers/{customer}/services', [CustomerController::class, 'services'])->name('customers.services');
     Route::get('/customers/{customer}', [CustomerController::class, 'show'])->name('customers.show');
     Route::get('/customers/{customer}/edit', [CustomerController::class, 'edit'])->name('customers.edit');
