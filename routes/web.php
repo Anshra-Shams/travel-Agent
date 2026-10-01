@@ -7,6 +7,7 @@ use App\Http\Controllers\FlightController;
 use App\Http\Controllers\HotelController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\PageController;
+use App\Http\Controllers\PackageController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QuotationController;
 use App\Http\Controllers\ServiceTypeController;
@@ -18,11 +19,6 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 | Web Routes
 |--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application.
-| These routes are loaded by the RouteServiceProvider and all of them
-| will be assigned to the "web" middleware group.
-|
 */
 
 Route::get('/', function () {
@@ -309,3 +305,25 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 
 require __DIR__ . '/auth.php';
+
+
+/*
+|--------------------------------------------------------------------------
+| Packages Module
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/service-types/{serviceType}/packages', [PackageController::class, 'index'])
+    ->name('packages.index');
+
+Route::get('/service-types/{serviceType}/packages/create', [PackageController::class, 'create'])
+    ->name('packages.create');
+
+Route::post('/service-types/{serviceType}/packages', [PackageController::class, 'store'])
+    ->name('packages.store');
+
+Route::get('/service-types/{serviceType}/packages/{package}', [PackageController::class, 'show'])
+    ->name('packages.show');
+
+Route::get('/service-types/{serviceType}/packages/{package}/print', [PackageController::class, 'print'])
+    ->name('packages.print');

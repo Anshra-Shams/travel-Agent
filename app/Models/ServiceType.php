@@ -51,6 +51,11 @@ class ServiceType extends Model
         return $this->status === 'active';
     }
 
+    public function packages()
+    {
+        return $this->hasMany(Package::class);
+    }
+
     public function getCustomersAttribute()
     {
         return Customer::whereJsonContains('service', $this->name)
