@@ -20,31 +20,67 @@
         }
 
         .print-container {
-            max-width: 900px;
-            margin: auto;
-            background: white;
+            max-width: 950px;
+            margin: 0 auto;
+            background: #ffffff;
             padding: 40px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
         }
 
+        /* ==============================
+           HEADER
+        ============================== */
+
         .header {
-            text-align: center;
+            display: flex;
+            align-items: center;
+            width: 100%;
             border-bottom: 3px solid #4f46e5;
             padding-bottom: 20px;
             margin-bottom: 25px;
         }
 
+        /* LOGO - LEFT SIDE */
+        .company-logo {
+            width: 180px;
+            min-width: 180px;
+            text-align: left;
+            padding-right: 20px;
+        }
+
+        .company-logo img {
+            display: block;
+            width: 160px;
+            max-width: 160px;
+            height: auto;
+            max-height: 110px;
+            object-fit: contain;
+            object-position: left center;
+        }
+
+        /* COMPANY DETAILS - RIGHT OF LOGO */
+        .company-details {
+            flex: 1;
+            text-align: left;
+        }
+
         .company-name {
-            font-size: 28px;
-            font-weight: bold;
+            font-size: 27px;
+            font-weight: 800;
             color: #312e81;
             margin-bottom: 8px;
+            line-height: 1.2;
         }
 
         .company-info {
             font-size: 13px;
+            color: #4b5563;
             line-height: 1.7;
-            color: #555;
         }
+
+        /* ==============================
+           PACKAGE TITLE
+        ============================== */
 
         .package-title {
             text-align: center;
@@ -52,15 +88,20 @@
         }
 
         .package-title h1 {
-            margin: 0;
-            font-size: 28px;
+            margin: 0 0 8px;
+            font-size: 27px;
             color: #111827;
         }
 
         .package-title p {
-            margin-top: 8px;
+            margin: 0;
             color: #6b7280;
+            font-size: 14px;
         }
+
+        /* ==============================
+           SECTIONS
+        ============================== */
 
         .section {
             margin-top: 25px;
@@ -70,26 +111,27 @@
         }
 
         .section-title {
-            background: #f3f4f6;
-            padding: 12px 16px;
-            font-size: 17px;
-            font-weight: bold;
+            background: #eef2ff;
             color: #312e81;
+            font-size: 16px;
+            font-weight: 700;
+            padding: 12px 15px;
             border-bottom: 1px solid #e5e7eb;
         }
 
-        .section-body {
-            padding: 18px;
+        .section-content {
+            padding: 15px;
         }
 
         .grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 18px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px 25px;
         }
 
         .item {
-            margin-bottom: 5px;
+            padding: 8px 0;
+            border-bottom: 1px solid #f3f4f6;
         }
 
         .label {
@@ -102,103 +144,198 @@
             font-size: 14px;
             font-weight: 600;
             color: #111827;
+        }
+
+        /* ==============================
+           DESCRIPTION
+        ============================== */
+
+        .description {
+            font-size: 14px;
+            line-height: 1.7;
+            color: #374151;
             white-space: pre-line;
         }
 
+        /* ==============================
+           PRICE
+        ============================== */
+
         .price-box {
-            text-align: center;
-            background: #f5f3ff;
-            border: 2px solid #4f46e5;
-            border-radius: 10px;
-            padding: 22px;
-            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #e5e7eb;
         }
 
-        .original-price {
-            color: #6b7280;
-            text-decoration: line-through;
-            font-size: 15px;
+        .price-box:last-child {
+            border-bottom: none;
         }
 
-        .discount {
-            color: #dc2626;
+        .price-label {
             font-size: 14px;
-            margin-top: 5px;
+            color: #4b5563;
+        }
+
+        .price-value {
+            font-size: 15px;
+            font-weight: 700;
+            color: #111827;
         }
 
         .final-price {
-            font-size: 30px;
-            font-weight: bold;
-            color: #312e81;
-            margin-top: 8px;
+            background: #eef2ff;
+            padding: 18px;
+            border-radius: 8px;
+            margin-top: 10px;
         }
 
-        .terms {
-            white-space: pre-line;
-            line-height: 1.7;
-            font-size: 14px;
-            color: #374151;
+        .final-price .price-label {
+            font-size: 17px;
+            font-weight: 700;
+            color: #312e81;
         }
+
+        .final-price .price-value {
+            font-size: 22px;
+            color: #312e81;
+        }
+
+        /* ==============================
+           LISTS
+        ============================== */
+
+        .package-list {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .package-list li {
+            margin-bottom: 7px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        /* ==============================
+           FOOTER
+        ============================== */
 
         .footer {
-            text-align: center;
             margin-top: 35px;
             padding-top: 18px;
-            border-top: 1px solid #ddd;
-            font-size: 12px;
+            border-top: 2px solid #e5e7eb;
+            text-align: center;
             color: #6b7280;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        /* ==============================
+           PRINT BUTTON
+        ============================== */
+
+        .print-button-wrapper {
+            max-width: 950px;
+            margin: 0 auto 20px;
+            text-align: right;
         }
 
         .print-button {
-            position: fixed;
-            top: 20px;
-            right: 20px;
+            border: none;
             background: #4f46e5;
             color: white;
-            border: none;
-            padding: 11px 18px;
-            border-radius: 7px;
-            cursor: pointer;
+            padding: 11px 20px;
+            border-radius: 6px;
             font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
         }
 
         .print-button:hover {
             background: #4338ca;
         }
 
+        /* ==============================
+           PRINT
+        ============================== */
+
         @media print {
 
+            @page {
+                size: A4;
+                margin: 12mm;
+            }
+
+            html,
             body {
-                background: white;
-                padding: 0;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #ffffff !important;
+            }
+
+            .print-button-wrapper {
+                display: none !important;
             }
 
             .print-container {
-                max-width: 100%;
-                padding: 20px;
+                width: 100% !important;
+                max-width: none !important;
+                margin: 0 !important;
+                padding: 10px !important;
+                box-shadow: none !important;
             }
 
-            .print-button {
-                display: none;
+            /* KEEP LOGO ON LEFT IN PRINT */
+            .header {
+                display: flex !important;
+                flex-direction: row !important;
+                align-items: center !important;
+                justify-content: flex-start !important;
+                width: 100% !important;
+            }
+
+            .company-logo {
+                display: block !important;
+                width: 180px !important;
+                min-width: 180px !important;
+                flex: 0 0 180px !important;
+                text-align: left !important;
+                padding-right: 20px !important;
+            }
+
+            .company-logo img {
+                display: block !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+                width: 160px !important;
+                max-width: 160px !important;
+                height: auto !important;
+                max-height: 110px !important;
+                margin: 0 !important;
+                object-fit: contain !important;
+                object-position: left center !important;
+            }
+
+            .company-details {
+                display: block !important;
+                flex: 1 !important;
+                text-align: left !important;
             }
 
             .section {
                 break-inside: avoid;
-            }
-        }
-
-        @media (max-width: 650px) {
-
-            body {
-                padding: 10px;
+                page-break-inside: avoid;
             }
 
-            .print-container {
-                padding: 20px;
+            .package-title {
+                break-inside: avoid;
+                page-break-inside: avoid;
             }
 
-            .grid {
-                grid-template-columns: 1fr;
+            .footer {
+                break-inside: avoid;
+                page-break-inside: avoid;
             }
         }
     </style>
@@ -206,31 +343,58 @@
 
 <body>
 
-    <button class="print-button" onclick="window.print()">
-        🖨 Print Package
-    </button>
+    {{-- PRINT BUTTON --}}
+    <div class="print-button-wrapper">
+        <button
+            type="button"
+            class="print-button"
+            onclick="window.print()"
+        >
+            🖨️ Print Package
+        </button>
+    </div>
 
+    {{-- MAIN PRINT AREA --}}
     <div class="print-container">
 
-        {{-- Company Header --}}
+        {{-- ==============================
+             COMPANY HEADER
+        ============================== --}}
+
         <div class="header">
 
-            <div class="company-name">
-                IKRASH AL-MADINA TRAVELS & TOURS
+            {{-- LOGO LEFT --}}
+            <div class="company-logo">
+                <img
+                    src="{{ asset('images/logo.png') }}"
+                    alt="IKRASH AL-MADINA TRAVELS & TOURS Logo"
+                >
             </div>
 
-            <div class="company-info">
-                📞 0316-3026092 | 0311-2211108
-                <br>
-                ✉ ikrashalmadinatravelntours@gmail.com
-                <br>
-                Facebook: IkrashAlMadinaTravels
+            {{-- COMPANY INFORMATION --}}
+            <div class="company-details">
+
+                <div class="company-name">
+                    IKRASH AL-MADINA TRAVELS & TOURS
+                </div>
+
+                <div class="company-info">
+                    📞 0316-3026092 | 0311-2211108
+                    <br>
+                    ✉ ikrashalmadinatravelntours@gmail.com
+                    <br>
+                    Facebook: IkrashAlMadinaTravels
+                </div>
+
             </div>
 
         </div>
 
 
-        {{-- Package Title --}}
+        {{-- ==============================
+             PACKAGE TITLE
+        ============================== --}}
+
         <div class="package-title">
 
             <h1>
@@ -238,58 +402,67 @@
             </h1>
 
             <p>
-                {{ $serviceType->name }}
+                Travel Package Details
             </p>
 
         </div>
 
 
-        {{-- Package Overview --}}
+        {{-- ==============================
+             PACKAGE OVERVIEW
+        ============================== --}}
+
         <div class="section">
 
             <div class="section-title">
                 Package Overview
             </div>
 
-            <div class="section-body">
-
-                @if($package->description)
-                    <div class="item" style="margin-bottom: 18px;">
-                        <div class="label">Description</div>
-
-                        <div class="value">
-                            {{ $package->description }}
-                        </div>
-                    </div>
-                @endif
+            <div class="section-content">
 
                 <div class="grid">
 
                     <div class="item">
-                        <div class="label">Departure Date</div>
+                        <div class="label">
+                            Package Name
+                        </div>
+
                         <div class="value">
-                            {{ $package->departure_date?->format('d M Y') ?? '-' }}
+                            {{ $package->name }}
                         </div>
                     </div>
 
                     <div class="item">
-                        <div class="label">Return Date</div>
+                        <div class="label">
+                            Service
+                        </div>
+
                         <div class="value">
-                            {{ $package->return_date?->format('d M Y') ?? '-' }}
+                            {{ $package->serviceType?->name ?? 'N/A' }}
                         </div>
                     </div>
 
                     <div class="item">
-                        <div class="label">Duration</div>
+                        <div class="label">
+                            Duration
+                        </div>
+
                         <div class="value">
-                            {{ $package->duration_days ?? '-' }} Days
+                            @if($package->duration_days)
+                                {{ $package->duration_days }} Days
+                            @else
+                                N/A
+                            @endif
                         </div>
                     </div>
 
                     <div class="item">
-                        <div class="label">Status</div>
+                        <div class="label">
+                            Status
+                        </div>
+
                         <div class="value">
-                            {{ ucfirst($package->status) }}
+                            {{ ucfirst($package->status ?? 'Active') }}
                         </div>
                     </div>
 
@@ -300,102 +473,37 @@
         </div>
 
 
-        {{-- Hotel Details --}}
-        <div class="section">
+        {{-- ==============================
+             TRAVEL DATES
+        ============================== --}}
 
-            <div class="section-title">
-                Hotel Details
-            </div>
-
-            <div class="section-body">
-
-                <div class="grid">
-
-                    <div class="item">
-                        <div class="label">Makkah Hotel</div>
-                        <div class="value">
-                            {{ $package->details['makkah_hotel'] ?? '-' }}
-                        </div>
-                    </div>
-
-                    <div class="item">
-                        <div class="label">Makkah Distance</div>
-                        <div class="value">
-                            {{ $package->details['makkah_distance'] ?? '-' }}
-                        </div>
-                    </div>
-
-                    <div class="item">
-                        <div class="label">Madina Hotel</div>
-                        <div class="value">
-                            {{ $package->details['madina_hotel'] ?? '-' }}
-                        </div>
-                    </div>
-
-                    <div class="item">
-                        <div class="label">Madina Distance</div>
-                        <div class="value">
-                            {{ $package->details['madina_distance'] ?? '-' }}
-                        </div>
-                    </div>
-
-                    <div class="item">
-                        <div class="label">Room Type</div>
-                        <div class="value">
-                            {{ $package->details['room_type'] ?? '-' }}
-                        </div>
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-        {{-- Travel & Visa --}}
         <div class="section">
 
             <div class="section-title">
                 Travel & Visa Details
             </div>
 
-            <div class="section-body">
+            <div class="section-content">
 
                 <div class="grid">
 
                     <div class="item">
-                        <div class="label">Airline</div>
+                        <div class="label">
+                            Departure Date
+                        </div>
+
                         <div class="value">
-                            {{ $package->details['airline'] ?? '-' }}
+                            {{ $package->departure_date ? $package->departure_date->format('d M Y') : 'N/A' }}
                         </div>
                     </div>
 
                     <div class="item">
-                        <div class="label">Visa</div>
-                        <div class="value">
-                            {{ $package->details['visa'] ?? '-' }}
+                        <div class="label">
+                            Return Date
                         </div>
-                    </div>
 
-                    <div class="item">
-                        <div class="label">Flight Details</div>
                         <div class="value">
-                            {{ $package->details['flight_details'] ?? '-' }}
-                        </div>
-                    </div>
-
-                    <div class="item">
-                        <div class="label">Transport</div>
-                        <div class="value">
-                            {{ $package->details['transport'] ?? '-' }}
-                        </div>
-                    </div>
-
-                    <div class="item">
-                        <div class="label">Insurance</div>
-                        <div class="value">
-                            {{ $package->details['insurance'] ?? '-' }}
+                            {{ $package->return_date ? $package->return_date->format('d M Y') : 'N/A' }}
                         </div>
                     </div>
 
@@ -406,114 +514,96 @@
         </div>
 
 
-        {{-- Ziyarat & Meals --}}
-        <div class="section">
+        {{-- ==============================
+             DESCRIPTION
+        ============================== --}}
 
-            <div class="section-title">
-                Ziyarat & Meals
-            </div>
+        @if($package->description)
 
-            <div class="section-body">
+            <div class="section">
 
-                <div class="grid">
+                <div class="section-title">
+                    Package Description
+                </div>
 
-                    <div class="item">
-                        <div class="label">Makkah Ziyarat</div>
-                        <div class="value">
-                            {{ $package->details['makkah_ziyarat'] ?? '-' }}
-                        </div>
-                    </div>
+                <div class="section-content">
 
-                    <div class="item">
-                        <div class="label">Madina Ziyarat</div>
-                        <div class="value">
-                            {{ $package->details['madina_ziyarat'] ?? '-' }}
-                        </div>
-                    </div>
-
-                    <div class="item">
-                        <div class="label">Meals</div>
-                        <div class="value">
-                            {{ $package->details['meals'] ?? '-' }}
-                        </div>
+                    <div class="description">
+                        {{ $package->description }}
                     </div>
 
                 </div>
 
             </div>
 
-        </div>
+        @endif
 
 
-        {{-- Included / Excluded --}}
-        <div class="section">
+        {{-- ==============================
+             PACKAGE DETAILS
+        ============================== --}}
 
-            <div class="section-title">
-                Services
-            </div>
+        @if($package->details)
 
-            <div class="section-body">
+            <div class="section">
 
-                <div class="grid">
+                <div class="section-title">
+                    Package Details
+                </div>
 
-                    <div class="item">
-                        <div class="label">Included Services</div>
+                <div class="section-content">
 
-                        <div class="value">
-                            {{ $package->details['included_services'] ?? '-' }}
+                    @if(is_array($package->details))
+
+                        <ul class="package-list">
+
+                            @foreach($package->details as $key => $value)
+
+                                @if(is_array($value))
+
+                                    <li>
+                                        <strong>
+                                            {{ ucfirst(str_replace('_', ' ', $key)) }}:
+                                        </strong>
+
+                                        {{ implode(', ', $value) }}
+                                    </li>
+
+                                @else
+
+                                    <li>
+                                        <strong>
+                                            {{ ucfirst(str_replace('_', ' ', $key)) }}:
+                                        </strong>
+
+                                        {{ $value }}
+                                    </li>
+
+                                @endif
+
+                            @endforeach
+
+                        </ul>
+
+                    @else
+
+                        <div class="description">
+                            {{ $package->details }}
                         </div>
-                    </div>
 
-                    <div class="item">
-                        <div class="label">Excluded Services</div>
-
-                        <div class="value">
-                            {{ $package->details['excluded_services'] ?? '-' }}
-                        </div>
-                    </div>
+                    @endif
 
                 </div>
 
             </div>
 
-        </div>
+        @endif
 
 
-        {{-- Pricing --}}
-        <div class="price-box">
+        {{-- ==============================
+             TERMS
+        ============================== --}}
 
-            <div class="label">
-                Original Price
-            </div>
-
-            <div class="original-price">
-                {{ $package->currency }}
-                {{ number_format($package->original_price ?? 0) }}
-            </div>
-
-            @if(($package->discount ?? 0) > 0)
-
-                <div class="discount">
-                    Discount:
-                    {{ $package->currency }}
-                    {{ number_format($package->discount) }}
-                </div>
-
-            @endif
-
-            <div class="label" style="margin-top: 12px;">
-                Final Price Per Person
-            </div>
-
-            <div class="final-price">
-                {{ $package->currency }}
-                {{ number_format($package->final_price ?? 0) }}
-            </div>
-
-        </div>
-
-
-        {{-- Terms --}}
         @if($package->terms)
 
             <div class="section">
@@ -522,9 +612,9 @@
                     Terms & Conditions
                 </div>
 
-                <div class="section-body">
+                <div class="section-content">
 
-                    <div class="terms">
+                    <div class="description">
                         {{ $package->terms }}
                     </div>
 
@@ -535,7 +625,75 @@
         @endif
 
 
-        {{-- Footer --}}
+        {{-- ==============================
+             PRICING
+        ============================== --}}
+
+        <div class="section">
+
+            <div class="section-title">
+                Pricing
+            </div>
+
+            <div class="section-content">
+
+                <div class="price-box">
+
+                    <div class="price-label">
+                        Original Price
+                    </div>
+
+                    <div class="price-value">
+                        {{ $package->currency ?? 'PKR' }}
+                        {{ number_format((float) ($package->original_price ?? 0), 2) }}
+                    </div>
+
+                </div>
+
+
+                @if((float) ($package->discount ?? 0) > 0)
+
+                    <div class="price-box">
+
+                        <div class="price-label">
+                            Discount
+                        </div>
+
+                        <div class="price-value">
+                            {{ number_format((float) $package->discount, 2) }}
+                        </div>
+
+                    </div>
+
+                @endif
+
+
+                <div class="final-price">
+
+                    <div class="price-box">
+
+                        <div class="price-label">
+                            Final Price
+                        </div>
+
+                        <div class="price-value">
+                            {{ $package->currency ?? 'PKR' }}
+                            {{ number_format((float) ($package->final_price ?? $package->original_price ?? 0), 2) }}
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        {{-- ==============================
+             FOOTER
+        ============================== --}}
+
         <div class="footer">
 
             <strong>
@@ -544,15 +702,11 @@
 
             <br>
 
-            0316-3026092 | 0311-2211108
+            Thank you for choosing our travel services.
 
             <br>
 
-            ikrashalmadinatravelntours@gmail.com
-
-            <br><br>
-
-            Thank you for choosing Ikrash Al-Madina Travels & Tours.
+            This document is system generated.
 
         </div>
 

@@ -5,6 +5,7 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FlightController;
 use App\Http\Controllers\HotelController;
+use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PackageController;
@@ -24,6 +25,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return redirect()->route('dashboard');
 });
+
 
 Route::middleware(['auth', 'verified'])->group(function () {
 
@@ -122,6 +124,27 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::patch('/quotations/{quotation}/convert', [QuotationController::class, 'convertToBooking'])
         ->name('quotations.convert');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Invoices Module
+    |--------------------------------------------------------------------------
+    |
+    | IMPORTANT:
+    | invoices/create MUST come before invoices/{invoice}
+    | otherwise "create" can be treated as an invoice ID.
+    |
+    */
+
+    Route::get('/invoices/create', [InvoiceController::class, 'create'])
+        ->name('invoices.create');
+
+    Route::get('/invoices/{invoice}/print', [InvoiceController::class, 'print'])
+        ->name('invoices.print');
+
+    Route::resource('invoices', InvoiceController::class)
+        ->except(['create']);
 
 
     /*
